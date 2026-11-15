@@ -275,15 +275,13 @@
       el('div', { class: 'formula' },
         'implied = round( tvl_usd x category_multiple x (1 + clamp(change_7d, ' + m.growth_floor + ', ' + m.growth_cap + ') / 100 x ' + m.growth_weight + ') x (' + m.maturity_floor + ' + ' + m.maturity_range + ' x sqrt(min(age_days, ' + m.maturity_days + ') / ' + m.maturity_days + ')) x (1 + ' + m.breadth_step + ' x min(chains - 1, ' + m.breadth_cap + ')) )'
       ),
+      // The groups and their multiples come from the model itself (DATA.model_categories),
+      // so the number on the page and the number in the score can never drift apart.
       el('table', null,
-        el('thead', null, el('tr', null, el('th', { scope: 'col', text: 'Category band' }), el('th', { scope: 'col', text: 'Multiple' }), el('th', { scope: 'col', text: 'Why' }))),
-        el('tbody', null,
-          el('tr', null, el('td', { text: 'Trading venues' }), el('td', { class: 'num', text: String(m.trading_multiple) }), el('td', { text: 'Dexs, derivatives, options, prediction markets: fees on flow' })),
-          el('tr', null, el('td', { text: 'Curators and allocators' }), el('td', { class: 'num', text: String(m.curator_multiple) }), el('td', { text: 'Risk curators, vaults and allocators: fees on managed capital' })),
-          el('tr', null, el('td', { text: 'Capital products' }), el('td', { class: 'num', text: String(m.capital_multiple) }), el('td', { text: 'Lending, CDPs, yield, RWA and stable assets: spread on capital' })),
-          el('tr', null, el('td', { text: 'Infrastructure' }), el('td', { class: 'num', text: String(m.infra_multiple) }), el('td', { text: 'Bridges, staking, oracles and the rest: a pipe, not a venue' })),
-          el('tr', null, el('td', { text: 'Uncategorised' }), el('td', { class: 'num', text: String(m.default_multiple) }), el('td', { text: 'No category on record' }))
-        )
+        el('thead', null, el('tr', null, el('th', { scope: 'col', text: 'Category group' }), el('th', { scope: 'col', text: 'Multiple' }))),
+        el('tbody', null, (DATA.model_categories || []).map(function (c) {
+          return el('tr', null, el('td', { text: c.label }), el('td', { class: 'num', text: c.multiple.toFixed(2) }));
+        }))
       ),
       el('p', { class: 'sub', text: 'Age is the time since the protocol was first listed, the best record of how long it has run with no token; an unlisted age uses ' + m.unknown_age_days + ' days. Wrapped, staked and bridged products and centralised exchanges are excluded from the early radar, as the watchlist rule excludes them: they are not protocols that might launch a token.' })
     );

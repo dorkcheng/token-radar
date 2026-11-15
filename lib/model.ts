@@ -17,7 +17,8 @@
 //   implied            max(1, round(tvl_usd x category x growth x maturity x breadth))
 //
 // No protocol name is ever special-cased: the same function scores every row, and the dashboard
-// states the constants so a reader can check any row by hand.
+// states the constants so a reader can check any row by hand. The category table the dashboard
+// states comes from this file's own constants (see categoryTable), never from a second copy.
 
 /** One protocol entry of the sealed snapshot: exactly its ten fields. */
 export interface SnapshotProtocol {
@@ -149,6 +150,12 @@ export interface LiveRow {
   change_7d: number | null;
 }
 
+/** One row of the category-multiple table the dashboard states. */
+export interface CategoryTableRow {
+  label: string;
+  multiple: number;
+}
+
 /** Everything the dashboard needs to render. */
 export interface RadarData {
   as_of: string;
@@ -156,6 +163,7 @@ export interface RadarData {
   floor_usd: number;
   model: ModelConstants;
   model_version: string;
+  model_categories: CategoryTableRow[];
   watchlist_size: number;
   board_size: number;
   early_size: number;
@@ -240,6 +248,21 @@ export function categoryMultiple(category: string | null, model: ModelConstants)
   if (CURATORS.has(category)) return model.curator_multiple;
   if (CAPITAL.has(category)) return model.capital_multiple;
   return model.infra_multiple;
+}
+
+/**
+ * The category-multiple table the dashboard states, built from the model's own constants, so
+ * the number on the page and the number in the score can never drift apart. The labels name
+ * the category groups; the multiples are the constants above, in the same order.
+ */
+export function categoryTable(model: ModelConstants): CategoryTableRow[] {
+  return [
+    { label: 'Trading venues — Dexs, Derivatives, Options, Prediction Market, Synthetics', multiple: model.trading_multiple },
+    { label: 'Curators and allocators — Risk Curators, Onchain Capital Allocator, Liquidity Manager', multiple: model.curator_multiple },
+    { label: 'Capital products — Lending, CDP, Yield, RWA, Stablecoin Issuer', multiple: model.capital_multiple },
+    { label: 'Infrastructure and everything else', multiple: model.infra_multiple },
+    { label: 'Uncategorised', multiple: model.default_multiple },
+  ];
 }
 
 /** The multipliers and the implied value one protocol gets under `model`. */
@@ -544,6 +567,7 @@ export function buildRadar(snapshot: Snapshot, model: ModelConstants = MODEL): {
     floor_usd: snapshot.floor_usd,
     model,
     model_version: MODEL_VERSION,
+    model_categories: categoryTable(model),
     watchlist_size: snapshot.watchlist.length,
     board_size: board.length,
     early_size: early,
