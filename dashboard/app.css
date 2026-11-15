@@ -89,6 +89,8 @@ a { color: var(--accent); }
 .tabs button { min-height: 30px; padding: 0 var(--step-3); border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
 .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--canvas); font-weight: 600; }
 .count { margin-left: auto; color: var(--muted); font-size: 13px; align-self: center; }
+.export { min-height: 30px; padding: 0 var(--step-3); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); align-self: center; }
+.export:hover { border-color: var(--accent); color: var(--accent); }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); overflow: hidden; }
 .table-wrap { overflow-x: auto; }

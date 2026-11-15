@@ -12,7 +12,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { boardIssue, buildRadar, dataScript, parseSnapshot } from './lib/model.ts';
+import { boardIssue, boardStats, buildRadar, dataScript, parseSnapshot, scoreBreakdown } from './lib/model.ts';
 import { buildDossier } from './vendor/makefun-board.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -47,6 +47,8 @@ if (issue !== null) {
   process.stderr.write(`token radar: the board fails the gate: ${issue}\n`);
   process.exit(1);
 }
+const stats = boardStats(board, snapshot);
+const example = board.length > 0 ? scoreBreakdown(board[0]!).join('\n  ') : 'no rows scored';
 
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'board.json'), `${JSON.stringify({ rows: board })}\n`);
@@ -92,6 +94,8 @@ for (const name of shots) {
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: DASHBOARD_CAPS }));
 
 process.stdout.write(
-  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
+  `token radar: ${snapshot.protocols.length} protocols, ${stats.watchlistSize} on the watchlist, ${stats.rows} rows scored (${stats.earlyRows} early, ${radar.live_size} live set aside)\n` +
+    `token radar: watchlist covered ${stats.watchlistCovered}/${stats.watchlistSize}; implied value $${stats.topValue.toLocaleString('en-US')} (rank 1, ${stats.topSlug}) down to $${stats.bottomValue.toLocaleString('en-US')}; ${stats.distinctValues} distinct values\n` +
+    `token radar: worked example, rank 1:\n  ${example}\n` +
     `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${dash.length} files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
 );

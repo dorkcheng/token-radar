@@ -94,6 +94,45 @@
       return hay.indexOf(q) >= 0;
     });
   }
+  // One CSV cell: quoted when it holds a comma, a quote or a line break, with quotes doubled.
+  function csvCell(value) {
+    var s = value === null || value === undefined ? '' : String(value);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  // The rows on screen, as a CSV download: the filtered pre-token view, or the live-token
+  // view with market caps instead of implied values. A plain Blob, no network, no library.
+  function downloadCsv() {
+    var lines;
+    if (state.tab === 'live') {
+      lines = [['protocol', 'category', 'chains', 'tvl_usd', 'change_7d', 'mcap_usd', 'token']];
+      DATA.live.forEach(function (r) {
+        lines.push([
+          csvCell(r.name), csvCell(r.category), csvCell((r.chains || []).join('; ')),
+          r.tvl_usd, r.change_7d === null ? '' : r.change_7d,
+          r.mcap_usd === null ? '' : r.mcap_usd, 'already trades',
+        ]);
+      });
+    } else {
+      lines = [['rank', 'protocol', 'category', 'chains', 'tvl_usd', 'change_7d', 'age_days', 'implied_value_usd', 'watchlist']];
+      sortedRows(rows()).forEach(function (r) {
+        lines.push([
+          r.rank, csvCell(r.name), csvCell(r.category), csvCell((r.chains || []).join('; ')),
+          r.tvl_usd, r.change_7d === null ? '' : r.change_7d,
+          r.age_days === null ? '' : r.age_days, r.implied_value_usd,
+          r.watchlist ? 'yes' : 'no',
+        ]);
+      });
+    }
+    var blob = new Blob([lines.map(function (l) { return l.join(','); }).join('\n') + '\n'], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = state.tab === 'live' ? 'token-radar-live.csv' : 'token-radar-board.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
+
   function sortedRows(list) {
     var key = state.sort;
     return list.slice().sort(function (a, b) {
@@ -176,7 +215,8 @@
       el('div', { class: 'field' }, el('label', { for: 'chain', text: 'Chain' }), chain),
       el('label', { class: 'check', for: 'watch' }, watch, el('span', { text: 'Watchlist only' })),
       el('div', { class: 'field' }, el('span', { class: 'sub', text: 'Token status' }), el('div', { class: 'tabs' }, pre, live)),
-      el('span', { class: 'count', text: state.tab === 'pre-token' ? rows().length + ' rows shown' : DATA.live.length + ' live-token protocols' })
+      el('span', { class: 'count', text: state.tab === 'pre-token' ? rows().length + ' rows shown' : DATA.live.length + ' live-token protocols' }),
+      el('button', { class: 'export', type: 'button', text: 'Export CSV', onclick: downloadCsv })
     );
   }
 

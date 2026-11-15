@@ -286,6 +286,51 @@ export function impliedValue(
   return { implied, growthPct, growthMult, maturityMult, breadthMult, catMult, age };
 }
 
+/** A row's score as readable lines, for the dossier's worked example and for a reader who
+ *  wants to check a row by hand. Each line names one factor and the number it contributes. */
+export function scoreBreakdown(row: BoardRow): string[] {
+  const m = row.model;
+  const growth =
+    row.change_7d === null
+      ? 'no 7-day change on record, counted as 0%'
+      : `${row.change_7d.toFixed(2)}% over 7 days`;
+  const age =
+    m.age_days === null ? 'unknown, counted as 365 days' : `${m.age_days} day${m.age_days === 1 ? '' : 's'}`;
+  const chains = `${row.chains.length} chain${row.chains.length === 1 ? '' : 's'}`;
+  return [
+    `TVL $${row.tvl_usd.toLocaleString('en-US')} times the category multiple ${m.category_multiple} for ${row.category ?? 'an uncategorised protocol'}.`,
+    `Growth ${growth}, clamped to ${m.growth_pct.toFixed(2)}%, gives a growth multiplier of ${m.growth_multiplier}.`,
+    `Age ${age} gives a maturity multiplier of ${m.maturity_multiplier}.`,
+    `${chains} give a breadth multiplier of ${m.breadth_multiplier}.`,
+    `Implied value $${row.implied_value_usd.toLocaleString('en-US')}: the product, rounded to the dollar, at least $1.`,
+  ];
+}
+
+/** Summary counts of a board, for the console log and the dossier's headline. */
+export function boardStats(board: BoardRow[], snapshot: Snapshot): {
+  rows: number;
+  watchlistCovered: number;
+  watchlistSize: number;
+  earlyRows: number;
+  topValue: number;
+  bottomValue: number;
+  topSlug: string;
+  distinctValues: number;
+} {
+  const watchlist = new Set(snapshot.watchlist);
+  const values = board.map((r) => r.implied_value_usd);
+  return {
+    rows: board.length,
+    watchlistCovered: board.filter((r) => watchlist.has(r.slug)).length,
+    watchlistSize: snapshot.watchlist.length,
+    earlyRows: board.filter((r) => !watchlist.has(r.slug)).length,
+    topValue: values.length > 0 ? Math.max(...values) : 0,
+    bottomValue: values.length > 0 ? Math.min(...values) : 0,
+    topSlug: board.length > 0 ? board[0]!.slug : '',
+    distinctValues: new Set(values).size,
+  };
+}
+
 /** Whether a protocol records no token at all. */
 export function isPreToken(p: SnapshotProtocol): boolean {
   return p.mcap_usd === null && p.gecko_id === null && p.symbol === null;
